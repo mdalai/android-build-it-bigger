@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">androidJokesLib</string>
+    <string name="jokes">Jokes should display here</string>
+</resources>

@@ -1,32 +1,25 @@
 package com.udacity.gradle.builditbigger;
 
-import android.app.Activity;
-import android.content.Context;
-import android.os.AsyncTask;
-import android.support.test.espresso.base.MainThread;
-import android.test.ActivityInstrumentationTestCase;
+
 import android.test.ActivityInstrumentationTestCase2;
-import android.test.InstrumentationTestCase;
-import android.util.Log;
-import android.util.Pair;
-import android.widget.Button;
+import android.text.TextUtils;
+
+import com.udacity.gradle.builditbigger.asyncTask.EndpointsAsyncTask;
+import com.udacity.gradle.builditbigger.asyncTask.OnTaskCompleted;
 
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
-import static android.app.PendingIntent.getActivity;
-import static android.support.v4.content.ContextCompat.startActivity;
-import static com.google.android.gms.internal.zzahn.runOnUiThread;
-import static com.udacity.gradle.builditbigger.MainActivity.*;
-import static org.junit.Assert.*;
 
 /**
  * Created by minga on 8/10/2018.
  */
 public class EndpointsAsyncTaskTest extends ActivityInstrumentationTestCase2<MainActivity> {
     private static final String TAG = "EndpointsAsyncTaskTest";
+    String resJoke = null;
+    CountDownLatch signal = null;
+
 
     public EndpointsAsyncTaskTest(){
         super(MainActivity.class);
@@ -37,29 +30,35 @@ public class EndpointsAsyncTaskTest extends ActivityInstrumentationTestCase2<Mai
         assertNotNull(activity);
     }
 
+    @Override
+    protected void setUp() throws Exception {
+        signal = new CountDownLatch(1);
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        signal.countDown();
+    }
+
 
     @Test
-    public void testAsynTask () throws Throwable {
-        // create  a signal to let us know when our task is done.
-        final CountDownLatch signal = new CountDownLatch (1);
+    public void testAsynTask () throws InterruptedException  {
+        MainActivity activity = getActivity ();
+        EndpointsAsyncTask task = new EndpointsAsyncTask(activity);
 
-        // Execute the async task on the UI thread! THIS IS KEY!
-        runOnUiThread (new Runnable() {
+        task.setListener (new OnTaskCompleted () {
             @Override
-            public void run() {
-                MainActivity.EndpointsAsyncTask.execute(( Runnable ) new Thread ("Manfred"));
-
+            public void OnTaskCompleted(String response) {
+                resJoke = response;
+                signal.countDown ();
             }
-        });
+        }).execute ("paid");
+        signal.await ();
 
-        /* The testing thread will wait here until the UI thread releases it
-         * above with the countDown() or 30 seconds passes and it times out.
-         */
-        signal.await(5, TimeUnit.SECONDS);
 
-        // The task is done, and now you can assert some things!
-        //assertTrue(called);
-        assertTrue("Happiness", true);
+        assertNotNull (resJoke);
+        assertFalse(TextUtils.isEmpty(resJoke));
+        //assertEquals ("Q: Why was the cat sitting on the computer?\n A: He was keeping an eye on the mouse!", resJoke);
 
     }
 
